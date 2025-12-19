@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Generator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>QR Code Generator</h1>
+        
+        <div class="input-section">
+            <div class="form-group">
+                <label for="text-input">Text to Encode:</label>
+                <textarea id="text-input" placeholder="Enter text, URL, or any content..." rows="4"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="icon-upload">Optional Icon (PNG/JPG):</label>
+                <input type="file" id="icon-upload" accept="image/*">
+                <small>Icon will be placed in the center of the QR code</small>
+            </div>
+            
+            <div class="form-group">
+                <label>Error Correction Level:</label>
+                <select id="error-correction">
+                    <option value="L">Low (7%)</option>
+                    <option value="M" selected>Medium (15%)</option>
+                    <option value="Q">Quartile (25%)</option>
+                    <option value="H">High (30%)</option>
+                </select>
+                <small>Higher levels allow more data recovery if QR code is damaged</small>
+            </div>
+            
+            <button id="generate-btn" class="btn-primary">Generate QR Code</button>
+        </div>
+        
+        <div class="preview-section" id="preview-section" style="display: none;">
+            <h2>Preview</h2>
+            <div class="qr-preview">
+                <div id="qr-canvas"></div>
+            </div>
+            
+            <div class="export-section">
+                <h3>Export as PNG</h3>
+                <div class="export-buttons">
+                    <button class="btn-export" data-size="256">256x256</button>
+                    <button class="btn-export" data-size="512">512x512</button>
+                    <button class="btn-export" data-size="1024">1024x1024</button>
+                    <button class="btn-export" data-size="2048">2048x2048</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="qrcode.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
