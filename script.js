@@ -112,6 +112,7 @@ function generateQRCode() {
             text: text,
             width: 400,
             height: 400,
+            typeNumber: 0, // Auto-detect best size for data length
             colorDark: '#000000',
             colorLight: '#ffffff',
             correctLevel: correctionLevel
@@ -226,6 +227,7 @@ function exportQRCode(size) {
             text: currentQRData.text,
             width: size,
             height: size,
+            typeNumber: 0, // Auto-detect best size for data length
             colorDark: '#000000',
             colorLight: '#ffffff',
             correctLevel: correctionLevel
