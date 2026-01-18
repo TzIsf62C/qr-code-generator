@@ -58,9 +58,30 @@ function handleIconUpload(event) {
     }
 }
 
+// Clean text by removing UTF-8 BOM and control characters
+function cleanText(text) {
+    // Remove UTF-8 BOM (U+FEFF)
+    text = text.replace(/^\uFEFF/, '');
+    
+    // Remove other common BOMs
+    text = text.replace(/^\uFFFE/, ''); // UTF-16 BE BOM
+    
+    // Remove control characters (except newlines, tabs, and carriage returns which may be intentional)
+    // This removes characters in ranges: 0x00-0x08, 0x0B-0x0C, 0x0E-0x1F, 0x7F
+    text = text.replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F]/g, '');
+    
+    // Remove zero-width characters that might cause issues
+    text = text.replace(/[\u200B-\u200D\uFEFF]/g, '');
+    
+    return text;
+}
+
 // Generate QR code
 function generateQRCode() {
-    const text = textInput.value.trim();
+    let text = textInput.value.trim();
+    
+    // Remove UTF-8 BOM and control characters
+    text = cleanText(text);
     
     if (!text) {
         alert('Please enter text to encode');
