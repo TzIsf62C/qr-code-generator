@@ -145,9 +145,7 @@ function generateQRCode() {
     }
 }
 
-// Overlay icon on QR code image
-function overlayIconOnImage(qrImage) {
-   Add quiet zone to preview image (with or without icon)
+// Add quiet zone to preview image (with or without icon)
 function addQuietZoneToPreview(qrImage) {
     const canvas = document.createElement('canvas');
     canvas.width = 400;
