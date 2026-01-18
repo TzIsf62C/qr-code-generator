@@ -98,15 +98,13 @@ function generateQRCode() {
             errorCorrection: errorCorrection
         };
         
-        // Wait for QR code to render, then overlay icon if present
+        // Wait for QR code to render, then add quiet zone and overlay icon if present
         setTimeout(() => {
-            if (uploadedIcon) {
-                const img = qrCanvas.querySelector('img');
-                if (img && img.complete) {
-                    overlayIconOnImage(img);
-                } else if (img) {
-                    img.onload = () => overlayIconOnImage(img);
-                }
+            const img = qrCanvas.querySelector('img');
+            if (img && img.complete) {
+                addQuietZoneToPreview(img);
+            } else if (img) {
+                img.onload = () => addQuietZoneToPreview(img);
             }
         }, 100);
         
@@ -124,6 +122,8 @@ function generateQRCode() {
 
 // Overlay icon on QR code image
 function overlayIconOnImage(qrImage) {
+   Add quiet zone to preview image (with or without icon)
+function addQuietZoneToPreview(qrImage) {
     const canvas = document.createElement('canvas');
     canvas.width = 400;
     canvas.height = 400;
@@ -141,10 +141,10 @@ function overlayIconOnImage(qrImage) {
     // Draw QR code with quiet zone
     ctx.drawImage(qrImage, offset, offset, qrSize, qrSize);
     
-    // Overlay icon
-    overlayIcon(canvas, uploadedIcon);
-    
-    // Replace image with canvas
+    // Overlay icon if present
+    if (uploadedIcon) {
+        overlayIcon(canvas, uploadedIcon);
+    }
     qrImage.src = canvas.toDataURL();
 }
 
