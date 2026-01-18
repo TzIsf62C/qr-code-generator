@@ -1,7 +1,6 @@
 // Global variables
 let uploadedIcon = null;
 let currentQRData = null;
-let qrCodeInstance = null;
 
 // DOM elements
 let textInput, iconUpload, errorCorrectionSelect, generateBtn, previewSection, qrCanvas, exportButtons;
@@ -59,7 +58,6 @@ function handleIconUpload(event) {
 }
 
 // Clean text by removing UTF-8 BOM and problematic control characters
-// Preserves all legitimate Unicode characters including Chinese, Japanese, Korean, etc.
 function cleanText(text) {
     // Remove UTF-8 BOM (U+FEFF) only at the start
     text = text.replace(/^\uFEFF/, '');
@@ -71,10 +69,9 @@ function cleanText(text) {
     // - Newlines (\n = 0x0A)
     // - Carriage returns (\r = 0x0D)  
     // - Tabs (\t = 0x09)
-    // Only remove: 0x00-0x08, 0x0B, 0x0C, 0x0E-0x1F, 0x7F (DEL)
     text = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
     
-    // Remove zero-width characters (but NOT zero-width joiner used in some scripts)
+    // Remove zero-width characters
     text = text.replace(/[\u200B\u200C\u200D\uFEFF]/g, '');
     
     return text;
@@ -97,42 +94,57 @@ function generateQRCode() {
     try {
         // Clear previous QR code
         qrCanvas.innerHTML = '';
-        qrCanvas.style.width = '';
-        qrCanvas.style.height = '';
         
-        // Generate QR code
+        // Map error correction levels
         const correctionLevel = {
-            'L': QRCode.CorrectLevel.L,
-            'M': QRCode.CorrectLevel.M,
-            'Q': QRCode.CorrectLevel.Q,
-            'H': QRCode.CorrectLevel.H
+            'L': 'L',
+            'M': 'M',
+            'Q': 'Q',
+            'H': 'H'
         }[errorCorrection];
         
-        qrCodeInstance = new QRCode(qrCanvas, {
-            text: text,
-            width: 400,
-            height: 400,
-            typeNumber: 0, // Auto-detect best size for data length
-            colorDark: '#000000',
-            colorLight: '#ffffff',
-            correctLevel: correctionLevel
-        });
+        // Generate QR code using qrcode-generator library
+        const typeNumber = 0; // Auto-detect
+        const qr = qrcode(typeNumber, correctionLevel);
+        
+        console.log('Text to encode:', text);
+        const utf8Bytes = new TextEncoder().encode(text);
+        console.log('Text bytes:', Array.from(utf8Bytes));
+        console.log('Text length:', text.length);
+        console.log('Byte length:', utf8Bytes.length);
+        
+        // Convert UTF-8 bytes to string of characters (each byte as a character)
+        // This ensures no BOM is added
+        let byteString = '';
+        for (let i = 0; i < utf8Bytes.length; i++) {
+            byteString += String.fromCharCode(utf8Bytes[i]);
+        }
+        
+        console.log('Byte string length:', byteString.length);
+        console.log('Byte string char codes:', Array.from(byteString).map(c => c.charCodeAt(0)));
+        
+        // Add data with explicit mode for UTF-8 support
+        qr.addData(byteString, 'Byte');
+        qr.make();
+        
+        console.log('QR code generated, module count:', qr.getModuleCount());
+        
+        // Create canvas and render QR code with quiet zone
+        const canvas = createQRCanvas(qr, 400);
+        
+        // Overlay icon if present
+        if (uploadedIcon) {
+            overlayIcon(canvas, uploadedIcon);
+        }
+        
+        // Add canvas to container
+        qrCanvas.appendChild(canvas);
         
         // Store current QR data for export
         currentQRData = {
             text: text,
             errorCorrection: errorCorrection
         };
-        
-        // Wait for QR code to render, then add quiet zone and overlay icon if present
-        setTimeout(() => {
-            const img = qrCanvas.querySelector('img');
-            if (img && img.complete) {
-                addQuietZoneToPreview(img);
-            } else if (img) {
-                img.onload = () => addQuietZoneToPreview(img);
-            }
-        }, 100);
         
         // Show preview section
         previewSection.style.display = 'block';
@@ -146,30 +158,40 @@ function generateQRCode() {
     }
 }
 
-// Add quiet zone to preview image (with or without icon)
-function addQuietZoneToPreview(qrImage) {
+// Create canvas with QR code and quiet zone
+function createQRCanvas(qr, size) {
     const canvas = document.createElement('canvas');
-    canvas.width = 400;
-    canvas.height = 400;
+    const modules = qr.getModuleCount();
+    
+    // Calculate quiet zone (4 modules on each side as per spec)
+    const quietZone = 4;
+    const totalModules = modules + (quietZone * 2);
+    const scale = size / totalModules;
+    
+    canvas.width = size;
+    canvas.height = size;
     const ctx = canvas.getContext('2d');
     
-    // Add quiet zone (white border) - 10% on each side (approx 4-5 modules for typical QR codes)
-    const quietZone = 0.1; // 10% padding on each side
-    const qrSize = 400 * (1 - 2 * quietZone);
-    const offset = 400 * quietZone;
-    
-    // Fill canvas with white background
+    // Fill with white background
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, 400, 400);
+    ctx.fillRect(0, 0, size, size);
     
-    // Draw QR code with quiet zone
-    ctx.drawImage(qrImage, offset, offset, qrSize, qrSize);
-    
-    // Overlay icon if present
-    if (uploadedIcon) {
-        overlayIcon(canvas, uploadedIcon);
+    // Draw QR code modules
+    ctx.fillStyle = '#000000';
+    for (let y = 0; y < modules; y++) {
+        for (let x = 0; x < modules; x++) {
+            if (qr.isDark(y, x)) {
+                ctx.fillRect(
+                    (x + quietZone) * scale,
+                    (y + quietZone) * scale,
+                    scale,
+                    scale
+                );
+            }
+        }
     }
-    qrImage.src = canvas.toDataURL();
+    
+    return canvas;
 }
 
 // Overlay icon on canvas
@@ -209,77 +231,52 @@ function exportQRCode(size) {
     }
     
     try {
-        // Create temporary div for QR generation
-        const tempDiv = document.createElement('div');
-        tempDiv.style.position = 'absolute';
-        tempDiv.style.left = '-9999px';
-        document.body.appendChild(tempDiv);
+        const errorCorrection = currentQRData.errorCorrection;
+        const text = currentQRData.text;
         
+        // Map error correction levels
         const correctionLevel = {
-            'L': QRCode.CorrectLevel.L,
-            'M': QRCode.CorrectLevel.M,
-            'Q': QRCode.CorrectLevel.Q,
-            'H': QRCode.CorrectLevel.H
-        }[currentQRData.errorCorrection];
+            'L': 'L',
+            'M': 'M',
+            'Q': 'Q',
+            'H': 'H'
+        }[errorCorrection];
         
-        // Generate QR code at desired size
-        const tempQR = new QRCode(tempDiv, {
-            text: currentQRData.text,
-            width: size,
-            height: size,
-            typeNumber: 0, // Auto-detect best size for data length
-            colorDark: '#000000',
-            colorLight: '#ffffff',
-            correctLevel: correctionLevel
-        });
+        // Generate QR code
+        const typeNumber = 0; // Auto-detect
+        const qr = qrcode(typeNumber, correctionLevel);
         
-        // Wait for generation, then export
-        setTimeout(() => {
-            const img = tempDiv.querySelector('img');
-            if (img && img.complete) {
-                exportImage(img, size);
-            } else if (img) {
-                img.onload = () => exportImage(img, size);
-            }
-            document.body.removeChild(tempDiv);
-        }, 100);
+        // Convert UTF-8 bytes to string of characters (each byte as a character)
+        // This ensures no BOM is added
+        const utf8Bytes = new TextEncoder().encode(text);
+        let byteString = '';
+        for (let i = 0; i < utf8Bytes.length; i++) {
+            byteString += String.fromCharCode(utf8Bytes[i]);
+        }
+        
+        qr.addData(byteString, 'Byte');
+        qr.make();
+        
+        // Create canvas at export size
+        const canvas = createQRCanvas(qr, size);
+        
+        // Overlay icon if present
+        if (uploadedIcon) {
+            overlayIcon(canvas, uploadedIcon);
+        }
+        
+        // Download
+        canvas.toBlob((blob) => {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = `qrcode-${size}x${size}.png`;
+            link.href = url;
+            link.click();
+            URL.revokeObjectURL(url);
+        }, 'image/png');
         
     } catch (error) {
         console.error('Error exporting QR code:', error);
         alert('Error exporting QR code. Please try again.');
     }
-}
-
-function exportImage(qrImage, size) {
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    
-    // Add quiet zone (white border) - 10% on each side (approx 4-5 modules for typical QR codes)
-    const quietZone = 0.1; // 10% padding on each side
-    const qrSize = size * (1 - 2 * quietZone);
-    const offset = size * quietZone;
-    
-    // Fill canvas with white background
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, size, size);
-    
-    // Draw QR code with quiet zone
-    ctx.drawImage(qrImage, offset, offset, qrSize, qrSize);
-    
-    // Overlay icon if present
-    if (uploadedIcon) {
-        overlayIcon(canvas, uploadedIcon);
-    }
-    
-    // Download
-    canvas.toBlob((blob) => {
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = `qrcode-${size}x${size}.png`;
-        link.href = url;
-        link.click();
-        URL.revokeObjectURL(url);
-    }, 'image/png');
 }
