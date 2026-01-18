@@ -129,8 +129,17 @@ function overlayIconOnImage(qrImage) {
     canvas.height = 400;
     const ctx = canvas.getContext('2d');
     
-    // Draw QR code
-    ctx.drawImage(qrImage, 0, 0, 400, 400);
+    // Add quiet zone (white border) - 10% on each side (approx 4-5 modules for typical QR codes)
+    const quietZone = 0.1; // 10% padding on each side
+    const qrSize = 400 * (1 - 2 * quietZone);
+    const offset = 400 * quietZone;
+    
+    // Fill canvas with white background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 400, 400);
+    
+    // Draw QR code with quiet zone
+    ctx.drawImage(qrImage, offset, offset, qrSize, qrSize);
     
     // Overlay icon
     overlayIcon(canvas, uploadedIcon);
@@ -222,8 +231,17 @@ function exportImage(qrImage, size) {
     canvas.height = size;
     const ctx = canvas.getContext('2d');
     
-    // Draw QR code
-    ctx.drawImage(qrImage, 0, 0, size, size);
+    // Add quiet zone (white border) - 10% on each side (approx 4-5 modules for typical QR codes)
+    const quietZone = 0.1; // 10% padding on each side
+    const qrSize = size * (1 - 2 * quietZone);
+    const offset = size * quietZone;
+    
+    // Fill canvas with white background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, size, size);
+    
+    // Draw QR code with quiet zone
+    ctx.drawImage(qrImage, offset, offset, qrSize, qrSize);
     
     // Overlay icon if present
     if (uploadedIcon) {
