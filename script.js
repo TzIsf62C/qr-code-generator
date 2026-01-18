@@ -58,20 +58,24 @@ function handleIconUpload(event) {
     }
 }
 
-// Clean text by removing UTF-8 BOM and control characters
+// Clean text by removing UTF-8 BOM and problematic control characters
+// Preserves all legitimate Unicode characters including Chinese, Japanese, Korean, etc.
 function cleanText(text) {
-    // Remove UTF-8 BOM (U+FEFF)
+    // Remove UTF-8 BOM (U+FEFF) only at the start
     text = text.replace(/^\uFEFF/, '');
     
-    // Remove other common BOMs
+    // Remove other common BOMs at the start
     text = text.replace(/^\uFFFE/, ''); // UTF-16 BE BOM
     
-    // Remove control characters (except newlines, tabs, and carriage returns which may be intentional)
-    // This removes characters in ranges: 0x00-0x08, 0x0B-0x0C, 0x0E-0x1F, 0x7F
-    text = text.replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F]/g, '');
+    // Remove specific problematic control characters, but preserve:
+    // - Newlines (\n = 0x0A)
+    // - Carriage returns (\r = 0x0D)  
+    // - Tabs (\t = 0x09)
+    // Only remove: 0x00-0x08, 0x0B, 0x0C, 0x0E-0x1F, 0x7F (DEL)
+    text = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
     
-    // Remove zero-width characters that might cause issues
-    text = text.replace(/[\u200B-\u200D\uFEFF]/g, '');
+    // Remove zero-width characters (but NOT zero-width joiner used in some scripts)
+    text = text.replace(/[\u200B\u200C\u200D\uFEFF]/g, '');
     
     return text;
 }
