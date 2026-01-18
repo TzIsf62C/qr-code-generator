@@ -141,6 +141,13 @@ small {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
+#qr-canvas img,
+#qr-canvas canvas {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
 .export-section {
     margin-top: 30px;
 }

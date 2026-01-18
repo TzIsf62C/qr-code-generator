@@ -72,8 +72,8 @@ function generateQRCode() {
     try {
         // Clear previous QR code
         qrCanvas.innerHTML = '';
-        qrCanvas.style.width = '400px';
-        qrCanvas.style.height = '400px';
+        qrCanvas.style.width = '';
+        qrCanvas.style.height = '';
         
         // Generate QR code
         const correctionLevel = {
